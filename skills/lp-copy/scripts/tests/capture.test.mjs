@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { capture, verify, serve } from '../capture.mjs';
 import { Downloads, checkURL } from '../network.mjs';
-import { rewriteCSS, rewriteHTML, rewriteJS, cssReferences } from '../rewrite.mjs';
+import { rewriteCSS, rewriteHTML, rewriteJS, cssReferences, htmlCSSReferences } from '../rewrite.mjs';
 
 const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><rect width="200" height="100" fill="#0ac"/></svg>';
 const listen = async handler => {
@@ -37,6 +37,7 @@ test('URL and parsers preserve asset queries, CSS imports, data URLs, and ordina
   const js = rewriteJS('const a="https://cdn.test/logo.svg", nav="https://cdn.test/about";', 'https://example.com/app.js', 'https://example.com', entries, []);
   assert.ok(js.includes('/_lp_external/'));
   assert.ok(js.includes('nav="https://cdn.test/about"'));
+  assert.deepEqual(htmlCSSReferences('<base href="/assets/"><base href="/ignored/"><style>@import "extra.css";@font-face{font-family:Later;src:url(later.woff2)}</style><div style="display:none;background:url(hidden.svg)"></div>', 'https://example.com/'), ['https://example.com/assets/later.woff2', 'https://example.com/assets/extra.css', 'https://example.com/assets/hidden.svg']);
 });
 
 test('download cache deduplicates, validates hash, revalidates, and caps response size', async () => {
@@ -74,12 +75,12 @@ test('quick and complete captures replay offline; warm rerun avoids network and 
     if (req.method !== 'GET') writes++;
     const send = (type, text) => res.writeHead(200, { 'content-type': type }).end(text);
     const url = new URL(req.url, 'http://fixture');
-    if (url.pathname === '/') send('text/html', `<!doctype html><html><head><title>Fixture</title><link rel="stylesheet" href="/css/site.css"></head><body><h1>テストLP</h1><img src="/image.svg?v=1"><picture><source media="(max-width:600px)" srcset="/image.svg?v=2"><img src="/image.svg?v=3"></picture><button aria-expanded="false" aria-controls="menu">Menu</button><div id="menu" hidden></div><div style="height:1000px"></div><img loading="lazy" src="/lazy.PNG"><script type="module" src="/js/app.js"></script></body></html>`);
+    if (url.pathname === '/') send('text/html', `<!doctype html><html><head><title>Fixture</title><link rel="stylesheet" href="/css/site.css"><style>@font-face{font-family:InlineUnused;src:url(/inline-unused.woff2)}</style></head><body><h1>テストLP</h1><img src="/image.svg?v=1"><picture><source media="(max-width:600px)" srcset="/image.svg?v=2"><img src="/image.svg?v=3"></picture><button aria-expanded="false" aria-controls="menu">Menu</button><div id="menu" hidden></div><div hidden style="background:url(/inline-hidden.svg)">Later</div><div style="height:1000px"></div><img loading="lazy" src="/lazy.PNG"><script type="module" src="/js/app.js"></script></body></html>`);
     else if (url.pathname === '/css/site.css') send('text/css', '@import "nested.css"; @font-face{font-family:Unused;src:url(/unused.woff2)}body{margin:0}img{width:150px}');
     else if (url.pathname === '/css/nested.css') send('text/css', 'h1{color:rgb(20,80,120)}');
     else if (url.pathname === '/js/app.js') send('text/javascript', `import {value} from './util.js';const external="${cdn.url}/logo.svg";const img=new Image();img.src=external;document.body.append(img);document.querySelector('button').onclick=e=>{const b=e.currentTarget;const m=document.querySelector('#menu');m.hidden=!m.hidden;b.setAttribute('aria-expanded',String(!m.hidden));if(!m.hidden)m.innerHTML='<img src="/MENU.PNG?v=4">'};fetch('/api/private',{method:'POST',body:'blocked'}).catch(()=>{});`);
     else if (url.pathname === '/js/util.js') send('text/javascript', 'export const value=1;');
-    else if (url.pathname === '/unused.woff2') send('font/woff2', 'UNUSED-FONT-FIXTURE');
+    else if (['/unused.woff2', '/inline-unused.woff2'].includes(url.pathname)) send('font/woff2', 'UNUSED-FONT-FIXTURE');
     else if (/\.(?:svg|PNG)$/.test(url.pathname)) send('image/svg+xml', svg);
     else res.writeHead(404).end();
   });
@@ -91,6 +92,10 @@ test('quick and complete captures replay offline; warm rerun avoids network and 
     const manifest = JSON.parse(await readFile(path.join(out, 'capture.json')));
     for (const suffix of ['/image.svg?v=1', '/image.svg?v=2', '/image.svg?v=3', '/MENU.PNG?v=4', '/js/util.js']) assert.ok(manifest.routes[suffix], suffix);
     assert.ok(!manifest.routes['/unused.woff2']);
+    for (const suffix of ['/inline-unused.woff2', '/inline-hidden.svg']) {
+      assert.ok(!manifest.routes[suffix]);
+      assert.ok(first.deferredCSS.includes(source.url + suffix));
+    }
     assert.ok((await readFile(path.join(out, 'original.html'), 'utf8')).includes('src="/lazy.PNG"'));
     assert.equal((await verify(out)).passed, true);
     const oldHits = hits;
@@ -98,7 +103,8 @@ test('quick and complete captures replay offline; warm rerun avoids network and 
     assert.equal(warm.networkRequests, 0); assert.equal(hits, oldHits); assert.ok(warm.cacheHits > 0);
     assert.equal(warm.inspectionReused, true);
     const complete = await capture(source.url, out, { allowPrivate: true, actions, resume: true, mode: 'complete' });
-    assert.equal(complete.networkRequests, 1); assert.ok(complete.assets > first.assets);
+    assert.equal(complete.networkRequests, 3); assert.ok(complete.assets > first.assets);
+    assert.equal(complete.deferredCSS.length, 0);
     assert.equal(complete.inspectionReused, true);
     assert.equal((await verify(out)).passed, true);
     const interrupted = path.join(root, 'interrupted');
@@ -112,6 +118,7 @@ test('quick and complete captures replay offline; warm rerun avoids network and 
     assert.equal((await verify(interrupted)).passed, true);
     const preview = await serve(out);
     try {
+      for (const suffix of ['/unused.woff2', '/inline-unused.woff2', '/inline-hidden.svg']) assert.equal((await fetch(new URL(suffix, preview.url))).status, 200, suffix);
       assert.equal((await fetch(new URL('/raw/anything', preview.url))).status, 404);
       assert.equal((await fetch(preview.url, { method: 'POST' })).status, 405);
     } finally { await close(preview.server); }

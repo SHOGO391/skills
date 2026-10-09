@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { Downloads, UA, hash, key, checkURL } from './network.mjs';
-import { CSP, cssReferences, localURL, rewriteCSS, rewriteHTML, rewriteJS } from './rewrite.mjs';
+import { CSP, cssReferences, htmlCSSReferences, localURL, rewriteCSS, rewriteHTML, rewriteJS } from './rewrite.mjs';
 
 const VIEWPORTS = [{ name: 'desktop', width: 1440, height: 1000 }, { name: 'mobile', width: 390, height: 844 }];
 const TRACKING = /(?:google-analytics\.com|googletagmanager\.com|connect\.facebook\.net|\/analytics(?:\/|$)|\/collect(?:\?|$))/i;
@@ -14,6 +14,7 @@ const STATIC = /\.(?:m?js|css|woff2?|ttf|otf|png|jpe?g|gif|webp|avif|svg|ico|mp4
 const isCSS = e => /text\/css/i.test(e.contentType);
 const isJS = e => /(?:javascript|ecmascript)/i.test(e.contentType);
 const isHTML = e => /text\/html/i.test(e.contentType);
+const styleReferences = e => (isHTML(e) ? htmlCSSReferences : cssReferences)(e.body.toString('utf8'), e.finalURL);
 const json = async p => JSON.parse(await readFile(p, 'utf8'));
 const saveJSON = (p, data) => writeFile(p, JSON.stringify(data, null, 2) + '\n');
 
@@ -196,12 +197,12 @@ export async function capture(url, out, options = {}) {
     // not invent JS paths or crawl unrelated application/admin routes.
     const processed = new Set();
     for (let round = 0; round < 20; round++) {
-      const styles = [...downloads.entries.values()].filter(e => isCSS(e) && !processed.has(e.url));
+      const styles = [...downloads.entries.values()].filter(e => (isCSS(e) || isHTML(e)) && !processed.has(e.url));
       if (!styles.length) break;
       const refs = new Set();
       for (const css of styles) {
         processed.add(css.url);
-        for (const ref of cssReferences(css.body.toString('utf8'), css.finalURL)) if (!excluded(ref)) refs.add(ref);
+        for (const ref of styleReferences(css)) if (!excluded(ref)) refs.add(ref);
       }
       await Promise.all([...refs].map(ref => downloads.get(ref).catch(e => failures.push({ url: ref, error: e.message }))));
       if (round === 19) warnings.push('CSS import depth limit reached');
@@ -221,7 +222,7 @@ export async function capture(url, out, options = {}) {
     if (source === finalURL) await writeFile(path.join(out, 'index.html'), body);
   }
   const deferred = new Set();
-  for (const css of downloads.entries.values()) if (isCSS(css)) for (const ref of cssReferences(css.body.toString('utf8'), css.finalURL)) if (!downloads.entries.has(ref)) deferred.add(ref);
+  for (const css of downloads.entries.values()) if (isCSS(css) || isHTML(css)) for (const ref of styleReferences(css)) if (!downloads.entries.has(ref)) deferred.add(ref);
   const manifest = { version: 1, requestedURL: url, entry: finalURL, entryPath: localURL(finalURL, finalURL, origin), origin, mode: options.mode ?? 'quick', actions: options.actions ?? [], options: { exclude: options.exclude ?? [], dataURLs: options.dataURLs ?? [], include: options.include ?? [] }, inspectionKey, routes, raw: downloads.metadata() };
   const report = { mode: manifest.mode, inspectionReused, elapsedSeconds: Number(((performance.now() - started) / 1000).toFixed(3)), assets: downloads.entries.size, savedBytes: downloads.total, ...downloads.metrics, blocked, failures, deferredCSS: [...deferred], warnings, pageChecks };
   await saveJSON(path.join(out, 'capture.json'), manifest);

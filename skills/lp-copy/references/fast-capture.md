@@ -44,7 +44,7 @@ role/nameは完全一致。必要なら `selector` でCSSセレクターを指�
 node /path/to/lp-copy/scripts/capture.mjs capture \
   --url 'https://example.com/' --out ./reference-copy --resume --actions ./actions.json
 
-# CSSの全参照（未使用フォント分割・背景画像等）も補完
+# 外部CSS・HTML内のCSS参照（未使用フォント分割・背景画像等）も補完
 node /path/to/lp-copy/scripts/capture.mjs capture \
   --url 'https://example.com/' --out ./reference-copy --resume --mode complete --actions ./actions.json
 ```

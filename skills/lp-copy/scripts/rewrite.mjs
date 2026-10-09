@@ -7,6 +7,14 @@ import parseSrcset from 'parse-srcset';
 import { hash, key } from './network.mjs';
 
 export const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'";
+const walk = (node, fn) => { fn(node); for (const child of [...node.childNodes ?? [], ...node.content?.childNodes ?? []]) walk(child, fn); };
+function documentBase(doc, fallback) {
+  let found;
+  walk(doc, node => {
+    if (found === undefined && node.tagName === 'base') found = node.attrs.find(a => a.name === 'href')?.value;
+  });
+  return found === undefined ? fallback : new URL(found, fallback).href;
+}
 export function localURL(value, base, origin) {
   if (!value || /^(?:data:|blob:|#|mailto:|tel:|javascript:)/i.test(value)) return value;
   const u = new URL(value, base);
@@ -26,6 +34,19 @@ export function cssReferences(text, base) {
     const node = values(r.params).nodes[0];
     if (node?.type === 'string') collect(node.value);
     else if (node?.type === 'function' && node.value === 'url') collect(values.stringify(node.nodes).replace(/^(['"])(.*)\1$/s, '$2'));
+  });
+  return [...found];
+}
+export function htmlCSSReferences(text, base) {
+  const doc = html.parse(text), found = new Set();
+  base = documentBase(doc, base);
+  walk(doc, node => {
+    const inline = node.attrs?.find(a => a.name === 'style');
+    if (inline) for (const ref of cssReferences(`x{${inline.value}}`, base)) found.add(ref);
+    if (node.tagName === 'style') {
+      const css = (node.childNodes ?? []).filter(n => n.nodeName === '#text').map(n => n.value).join('');
+      for (const ref of cssReferences(css, base)) found.add(ref);
+    }
   });
   return [...found];
 }
@@ -71,11 +92,7 @@ export function rewriteJS(text, base, origin, entries, warnings) {
 }
 export function rewriteHTML(text, base, origin) {
   const doc = html.parse(text);
-  const walk = (node, fn) => { fn(node); for (const child of [...node.childNodes ?? [], ...node.content?.childNodes ?? []]) walk(child, fn); };
-  walk(doc, node => {
-    const baseHref = node.tagName === 'base' && node.attrs.find(a => a.name === 'href');
-    if (baseHref) base = new URL(baseHref.value, base).href;
-  });
+  base = documentBase(doc, base);
   walk(doc, node => {
     if (!node.attrs) return;
     const attr = name => node.attrs.find(a => a.name === name);

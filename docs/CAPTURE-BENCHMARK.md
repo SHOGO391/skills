@@ -35,6 +35,6 @@ quickとcompleteの初回時間差は小さく、実行順・ネットワーク�
 ## 継続的な検証
 
 公開CIは外部の実サイトを巡回せず、ローカルの制御したページで再現可能な条件を検査します。
-CSS import・クエリ違い・大文字拡張子・外部CDN・動的メニュー画像・ES module import・レスポンシブ画像、送信遮断、キャッシュ破損、304再検証、途中失敗後の再開、quick/complete、オフライン表示を対象にしています。
+外部CSSとHTML内のstyleタグ・style属性の参照、CSS import・クエリ違い・大文字拡張子・外部CDN・動的メニュー画像・ES module import・レスポンシブ画像、送信遮断、キャッシュ破損、304再検証、途中失敗後の再開、quick/complete、オフライン表示を対象にしています。
 
 実行方法は [共通CLIガイド](../skills/lp-copy/references/fast-capture.md) を参照してください。
