@@ -15,7 +15,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -27,4 +27,13 @@ jobs:
       - run: uv sync --locked
       - run: uv run --locked python scripts/validate_skills.py
       - run: uv run --locked python -m unittest discover -s tests -v
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - run: npm ci
+        working-directory: skills/lp-copy/scripts
+      - run: npx playwright install --with-deps chromium
+        working-directory: skills/lp-copy/scripts
+      - run: npm test
+        working-directory: skills/lp-copy/scripts
       - run: git diff --check

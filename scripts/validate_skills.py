@@ -81,6 +81,8 @@ def check_skill(folder):
         require(f"${name}" in interface["default_prompt"],
                 f"{name}: default_prompt must name the skill")
     for path in folder.rglob("*.md"):
+        if set(path.relative_to(folder).parts).intersection(PRIVATE_PARTS):
+            continue  # Local CLI dependencies are not part of the distributed skill.
         check_links(path, folder.resolve())
 
 
