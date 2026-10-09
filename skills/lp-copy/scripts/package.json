@@ -1,0 +1,23 @@
+{
+  "name": "lp-copy-capture",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "acorn": "8.19.0",
+    "acorn-walk": "8.3.5",
+    "parse-srcset": "1.0.2",
+    "parse5": "8.0.1",
+    "playwright": "1.64.0",
+    "postcss": "8.5.29",
+    "postcss-value-parser": "4.2.0",
+    "undici": "7.30.0"
+  }
+}

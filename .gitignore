@@ -11,3 +11,5 @@ __pycache__/
 docs/STATUS.md
 private/
 *.log
+node_modules/
+reference-copy/

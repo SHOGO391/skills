@@ -62,6 +62,20 @@ Codexで反映されない場合は再起動します。
 
 ### 使用例
 
+`lp-copy` には、ブラウザが使った素材を優先取得する共通CLIを同梱しています。**取得・パス変換を毎回実装せず、PC/SPで使う素材を保存してローカル表示できます。**
+通常の `quick`、CSSの未使用フォント等も補完する `complete`、8並列取得、キャッシュ再利用、同じ操作でのPC/SP検証に対応します。
+
+```sh
+cd skills/lp-copy/scripts
+npm ci
+npx playwright install chromium
+node capture.mjs capture --url 'https://example.com/' --out ./reference-copy
+node capture.mjs serve --out ./reference-copy --port 8766
+```
+
+Node.js 22以上が必要です。メニュー・タブ操作の指定、再取得、検証は [共通CLIの使い方](skills/lp-copy/references/fast-capture.md) を参照してください。初回の依存導入後は同じインストールを再利用できます。MCPサーバーの依存にNode.jsを追加するものではありません。
+取得量・所要時間と比較条件は [実測結果](docs/CAPTURE-BENCHMARK.md) にまとめています。
+
 Codexの場合：
 
 ```text

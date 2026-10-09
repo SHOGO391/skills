@@ -10,3 +10,8 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 3
+  - package-ecosystem: npm
+    directory: /skills/lp-copy/scripts
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
