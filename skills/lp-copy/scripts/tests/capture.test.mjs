@@ -37,6 +37,10 @@ test('URL and parsers preserve asset queries, CSS imports, data URLs, and ordina
   const js = rewriteJS('const a="https://cdn.test/logo.svg", nav="https://cdn.test/about";', 'https://example.com/app.js', 'https://example.com', entries, []);
   assert.ok(js.includes('/_lp_external/'));
   assert.ok(js.includes('nav="https://cdn.test/about"'));
+  const inline = rewriteHTML('<body onload="this.dataset.url=\'https://cdn.test/logo.svg\'"><script>const image="https://cdn.test/logo.svg"</script><script type="application/ld+json">{"url":"https://cdn.test/logo.svg"}</script></body>', 'https://example.com/', 'https://example.com', entries);
+  assert.ok(inline.includes('const image="/_lp_external/'));
+  assert.ok(inline.includes('this.dataset.url=&quot;/_lp_external/'));
+  assert.ok(inline.includes('<script type="application/ld+json">{"url":"https://cdn.test/logo.svg"}</script>'));
   assert.deepEqual(htmlCSSReferences('<base href="/assets/"><base href="/ignored/"><style>@import "extra.css";@font-face{font-family:Later;src:url(later.woff2)}</style><div style="display:none;background:url(hidden.svg)"></div>', 'https://example.com/'), ['https://example.com/assets/later.woff2', 'https://example.com/assets/extra.css', 'https://example.com/assets/hidden.svg']);
 });
 
@@ -75,7 +79,7 @@ test('quick and complete captures replay offline; warm rerun avoids network and 
     if (req.method !== 'GET') writes++;
     const send = (type, text) => res.writeHead(200, { 'content-type': type }).end(text);
     const url = new URL(req.url, 'http://fixture');
-    if (url.pathname === '/') send('text/html', `<!doctype html><html><head><title>Fixture</title><link rel="stylesheet" href="/css/site.css"><style>@font-face{font-family:InlineUnused;src:url(/inline-unused.woff2)}</style></head><body><h1>テストLP</h1><img src="/image.svg?v=1"><picture><source media="(max-width:600px)" srcset="/image.svg?v=2"><img src="/image.svg?v=3"></picture><button aria-expanded="false" aria-controls="menu">Menu</button><div id="menu" hidden></div><div hidden style="background:url(/inline-hidden.svg)">Later</div><div style="height:1000px"></div><img loading="lazy" src="/lazy.PNG"><script type="module" src="/js/app.js"></script></body></html>`);
+    if (url.pathname === '/') send('text/html', `<!doctype html><html><head><title>Fixture</title><link rel="stylesheet" href="/css/site.css"><style>@font-face{font-family:InlineUnused;src:url(/inline-unused.woff2)}</style></head><body><h1>テストLP</h1><img src="/image.svg?v=1"><picture><source media="(max-width:600px)" srcset="/image.svg?v=2"><img src="/image.svg?v=3"></picture><button aria-expanded="false" aria-controls="menu">Menu</button><div id="menu" hidden></div><div hidden style="background:url(/inline-hidden.svg)">Later</div><div style="height:1000px"></div><img loading="lazy" src="/lazy.PNG"><script>const inlineImage=new Image();inlineImage.src="${cdn.url}/inline.svg";document.body.append(inlineImage);</script><script type="module">const moduleImage=new Image();moduleImage.src="${cdn.url}/module.svg";document.body.append(moduleImage);</script><script type="module" src="/js/app.js"></script></body></html>`);
     else if (url.pathname === '/css/site.css') send('text/css', '@import "nested.css"; @font-face{font-family:Unused;src:url(/unused.woff2)}body{margin:0}img{width:150px}');
     else if (url.pathname === '/css/nested.css') send('text/css', 'h1{color:rgb(20,80,120)}');
     else if (url.pathname === '/js/app.js') send('text/javascript', `import {value} from './util.js';const external="${cdn.url}/logo.svg";const img=new Image();img.src=external;document.body.append(img);document.querySelector('button').onclick=e=>{const b=e.currentTarget;const m=document.querySelector('#menu');m.hidden=!m.hidden;b.setAttribute('aria-expanded',String(!m.hidden));if(!m.hidden)m.innerHTML='<img src="/MENU.PNG?v=4">'};fetch('/api/private',{method:'POST',body:'blocked'}).catch(()=>{});`);

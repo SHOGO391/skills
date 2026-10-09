@@ -213,7 +213,7 @@ export async function capture(url, out, options = {}) {
   const routes = {};
   for (const [source, item] of downloads.entries) {
     let body = item.body;
-    if (isHTML(item)) body = Buffer.from(rewriteHTML(body.toString('utf8'), item.finalURL, origin));
+    if (isHTML(item)) body = Buffer.from(rewriteHTML(body.toString('utf8'), item.finalURL, origin, downloads.entries, warnings));
     else if (isCSS(item)) body = Buffer.from(rewriteCSS(body.toString('utf8'), item.finalURL, origin, options.exclude));
     else if (isJS(item)) body = Buffer.from(rewriteJS(body.toString('utf8'), item.finalURL, origin, downloads.entries, warnings));
     const file = hash(body);

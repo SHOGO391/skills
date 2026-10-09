@@ -90,7 +90,7 @@ export function rewriteJS(text, base, origin, entries, warnings) {
   for (const [start, end, value] of patches.sort((a, b) => b[0] - a[0])) text = text.slice(0, start) + value + text.slice(end);
   return text;
 }
-export function rewriteHTML(text, base, origin) {
+export function rewriteHTML(text, base, origin, entries = new Map(), warnings = []) {
   const doc = html.parse(text);
   base = documentBase(doc, base);
   walk(doc, node => {
@@ -102,10 +102,15 @@ export function rewriteHTML(text, base, origin) {
     node.attrs = node.attrs.filter(a => !['integrity', 'ping'].includes(a.name));
     for (const a of node.attrs) {
       if (a.name === 'style') a.value = rewriteCSS(`x{${a.value}}`, base, origin).slice(2, -1);
+      else if (/^on[a-z]+$/.test(a.name)) a.value = rewriteJS(a.value, base, origin, entries, warnings);
       else if (['srcset', 'data-srcset', 'imagesrcset'].includes(a.name)) a.value = parseSrcset(a.value).map(s => localURL(s.url, base, origin) + (s.w ? ` ${s.w}w` : s.d ? ` ${s.d}x` : '')).join(', ');
       else if (['src', 'poster', 'data-src'].includes(a.name) || (a.name === 'href' && ['link', 'base', 'image', 'use'].includes(node.tagName))) a.value = localURL(a.value, base, origin);
     }
     if (node.tagName === 'style') for (const child of node.childNodes ?? []) if (child.nodeName === '#text') child.value = rewriteCSS(child.value, base, origin);
+    const scriptType = (attr('type')?.value ?? '').trim().toLowerCase().split(';')[0];
+    if (node.tagName === 'script' && !attr('src') && /^(?:|module|(?:text|application)\/(?:java|ecma)script)$/.test(scriptType)) {
+      for (const child of node.childNodes ?? []) if (child.nodeName === '#text') child.value = rewriteJS(child.value, base, origin, entries, warnings);
+    }
   });
   const head = doc.childNodes.find(n => n.tagName === 'html').childNodes.find(n => n.tagName === 'head');
   const additions = html.parseFragment(`<meta http-equiv="Content-Security-Policy" content="${CSP}"><script src="/_lp_guard.js"></script>`).childNodes;

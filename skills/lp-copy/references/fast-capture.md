@@ -78,7 +78,7 @@ node /path/to/lp-copy/scripts/capture.mjs verify --out ./reference-copy
 - `index.html` / `objects/`：変換済み。`screenshots/`：原本/ローカルのPC/SP画像。
 - `report.json`：計測・未取得項目。`verification.json`：検証結果。
 
-HTML/CSSを構文解析し、JSでは取得済み素材の絶対URL文字列だけを変換する。同一サイト内の動的パスとES moduleの相対importは専用サーバーが元パスで配信する。外部URLの動的な組立、Worker、認証、バックエンド、未訪問ルートの完全複製は保証しない。取得漏れや差分があれば必要な部分だけ手動補完する。取得失敗があっても調査用成果物は保存するため、captureの終了だけで完成扱いにせずverifyと目視確認まで実施する。
+HTML/CSSを構文解析し、外部JS・HTML内の実行可能なscript・イベント属性では取得済み素材の絶対URL文字列だけを変換する。JSON-LD等のデータ用scriptは変更しない。同一サイト内の動的パスとES moduleの相対importは専用サーバーが元パスで配信する。外部URLの動的な組立、Worker、認証、バックエンド、未訪問ルートの完全複製は保証しない。取得漏れや差分があれば必要な部分だけ手動補完する。取得失敗があっても調査用成果物は保存するため、captureの終了だけで完成扱いにせずverifyと目視確認まで実施する。
 
 quickで後回しにしたフォント分割は、文言を変更すると必要になることがある。文字変更・幅の追加・未確認操作まで使う場合はcompleteで補完し、追加条件で検証する。completeでも未訪問ページやJSで生成される全素材まで取得する意味ではない。
 
