@@ -1,0 +1,13 @@
+.DS_Store
+.harness/
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+.claude/settings.local.json
+.codex/
+docs/STATUS.md
+private/
+*.log

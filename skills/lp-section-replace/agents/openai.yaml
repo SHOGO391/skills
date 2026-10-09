@@ -1,0 +1,4 @@
+interface:
+  display_name: "LP Section Replace"
+  short_description: "既存LPの文言と対象外のコードを保ち、指定セクションだけデザイン変更"
+  default_prompt: "$lp-section-replace を使って、既存LPの指定セクションだけを参考URLのデザインに差し替えてください。"

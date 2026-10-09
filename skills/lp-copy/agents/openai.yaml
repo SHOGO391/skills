@@ -1,0 +1,4 @@
+interface:
+  display_name: "LP Copy"
+  short_description: "参考LPのHTML・CSS・画像・フォントを取得し、ローカルで再現"
+  default_prompt: "$lp-copy を使って、指定URLのLPをローカルで表示できる形に再現してください。"
