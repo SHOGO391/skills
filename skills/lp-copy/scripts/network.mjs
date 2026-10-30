@@ -9,8 +9,17 @@ export const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/5
 export const hash = value => createHash('sha256').update(value).digest('hex');
 export const key = value => { const u = new URL(value); u.hash = ''; return u.href; };
 const privateIPs = new BlockList();
-for (const [ip, bits] of [['0.0.0.0', 8], ['10.0.0.0', 8], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.168.0.0', 16], ['224.0.0.0', 4]]) privateIPs.addSubnet(ip, bits, 'ipv4');
-for (const [ip, bits] of [['::', 128], ['::1', 128], ['fc00::', 7], ['fe80::', 10], ['ff00::', 8]]) privateIPs.addSubnet(ip, bits, 'ipv6');
+// IANA special-purpose ranges that are not the public internet, including
+// shared address space (100.64/10) where cloud metadata services can live.
+for (const [ip, bits] of [['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16],
+  ['172.16.0.0', 12], ['192.0.0.0', 24], ['192.0.2.0', 24], ['192.168.0.0', 16], ['198.18.0.0', 15],
+  ['198.51.100.0', 24], ['203.0.113.0', 24], ['224.0.0.0', 4], ['240.0.0.0', 4]]) privateIPs.addSubnet(ip, bits, 'ipv4');
+// Besides local ranges, block IPv6 forms that embed an IPv4 address
+// (IPv4-compatible, NAT64, 6to4, Teredo) so they cannot reach the ranges above.
+// IPv4-mapped (::ffff:0:0/96) is not listed: BlockList already checks it against
+// the IPv4 rules, and listing it would block every IPv4 address.
+for (const [ip, bits] of [['::', 96], ['64:ff9b::', 96], ['64:ff9b:1::', 48], ['100::', 64],
+  ['2001::', 32], ['2001:db8::', 32], ['2002::', 16], ['fc00::', 7], ['fe80::', 10], ['fec0::', 10], ['ff00::', 8]]) privateIPs.addSubnet(ip, bits, 'ipv6');
 const isPrivate = x => privateIPs.check(x.address, x.family === 6 ? 'ipv6' : 'ipv4');
 // Validate the addresses used by the actual socket as well as URL preflight,
 // so a changed DNS answer cannot redirect a public capture into the LAN.
