@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>予測 | サンプル競馬 AI</title>
+<style>
+  body{font-family:sans-serif;margin:16px}
+  table{border-collapse:collapse}th,td{border:1px solid #ccc;padding:4px 8px}
+  .badge{background:#eee;border-radius:8px;padding:1px 6px;font-size:11px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>中央 予測 <span class="badge" title="第4世代 新世代モデル 改良版 (2026-09-26切替)／激熱バッジ: 8戦略。変更履歴はご利用ガイド「モデルのバージョン」を参照">v3.1</span></h1>
+  <p>中央開催向けのAI予測、結果、買い目確認ページです。選択日の全会場を発走時刻順に表示します。</p>
+  <nav><a href="#guide">ご利用ガイド</a> <a href="#login">パスワード</a></nav>
+</header>
+
+<section id="login">
+  <h2>パスワード</h2>
+  <p>その日の予測ページのパスワードを入力してください。パスワードは配布メールに記載されています。入力後、解錠された日付はこのブラウザに保存され、次回以降は入力不要になります。</p>
+  <input placeholder="当日のパスワードを入力してください">
+  <button>OK</button>
+  <p>表示できる日付がありません。「パスワード」からその日のパスワードを入力してください。</p>
+</section>
+
+<section id="races">
+  <h2>出走表</h2>
+  <p>カードをクリックで表示。各カードは左から: レース番号 → レース情報 → 荒れスコア(右上2リング)。軸 / 複 / 相手 はすべて頭数。</p>
+  <table>
+    <thead><tr>
+      <th>馬番</th><th>馬名</th><th>勝率</th>
+      <th title="◎○▲△は順位5位以内の馬だけ。◎＝その中でAI勝率が市場の見立てを最も上回る馬、○＝◎以外でこの表の勝率が最も高い馬、▲＝残りの単勝8倍以上">AI印（発走前の板×購入AI）</th>
+      <th>信頼度</th><th>シグナル</th>
+    </tr></thead>
+    <tbody>
+      <tr><td>3</td><td>サンプルホース</td><td>18.2%</td><td>◎</td><td>A</td><td>軸</td></tr>
+    </tbody>
+  </table>
+  <p class="empty">このレースに条件に合う馬はいません。</p>
+  <p>表示列はこの端末のブラウザに保存され、他の端末には同期されません。いつでも「表示列」から戻せます。</p>
+</section>
+
+<section id="hot">
+  <h2>激熱バッジ</h2>
+  <article>
+    <h3>単勝 S1</h3>
+    <p>選定成績: 5/31-7/5の75点・的中24.0%・回収210.3%。統計関門5種(期間分割/上位2的中除外/ブートストラップ/ランダム対照/境界頑健性)を全通過した唯一の単勝戦略。馬体重条件はレース約50分前の発表値で最終確認を。掲載後の追跡成績は毎週更新。</p>
+  </article>
+  <p>掲載値の読み方: 激熱バッジ等の「選定成績」は選定期間の探索値で、上振れを含み得る。実力の判定は「掲載後の追跡成績」(毎週更新)を参照。</p>
+</section>
+
+<section id="guide">
+  <h2>ご利用ガイド</h2>
+  <table>
+    <tr><td><b>AI印</b></td><td>発走前の単勝・複勝・馬連の板に購入AI（前夜の特徴量で市場の見立てを直す予測）を重ねた印。2段目のモデルが T-5 の板を読んで付ける。</td></tr>
+    <tr><td><b>信頼度</b></td><td>A〜C の 3 段階。</td></tr>
+    <tr><td><b>複勝</b></td><td>7頭立て以下は複勝が2着までの払戻になる。</td></tr>
+  </table>
+  <p>当サイトは JRA・地方競馬主催者とは独立したサービスです。</p>
+</section>
+
+<script>
+  // 読み込みエラーの文言（race_data.json）
+  function showError(msg){
+    setStatus(`race_data.json の読み込みに失敗しました。 ${msg} ページを再読み込みしてください。`);
+  }
+  const cols = [
+    {key:'winConf', label:'信頼度'},
+    {key:'aiMark', label:'<span title="◎○▲△は順位5位以内の馬だけ。◎＝AI勝率が市場の見立てを最も上回る馬">AI印（発走前の板×購入AI）</span>'},
+  ];
+</script>
+</body>
+</html>

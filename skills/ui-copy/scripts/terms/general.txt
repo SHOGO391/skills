@@ -1,0 +1,38 @@
+# ui-copy 既定の「内部の語」（T10）。1 行 1 語。# で始まる行は無視。
+# 利用者には意味が無い、作り手の間だけで通じる語。どのプロジェクトにも当てはまる型だけ置く。
+# プロジェクト固有の語は repo に .ui-copy-terms.txt を置いて --terms で足す。同梱の例は --preset keiba。
+# ASCII の語は単語境界つきで照合（大文字を含む語は大小を区別）。それ以外は部分一致。
+
+# ファイル名・拡張子（「race_data.json の読み込みに失敗」のような漏れ）
+.json
+.csv
+.parquet
+.yaml
+.yml
+.sql
+.log
+.env
+
+# ホスティング・基盤（利用者から見えない裏側）
+Supabase
+Firebase
+Render
+Vercel
+Netlify
+Cloudflare
+Heroku
+localhost
+S3
+
+# 内部の仕組みの呼び名
+バックエンド
+backend
+データベース
+database
+エンドポイント
+endpoint
+cron
+バッチ処理
+ジョブ
+キュー
+マイグレーション

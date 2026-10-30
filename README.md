@@ -3,7 +3,7 @@
 [![Validate skills](https://github.com/SHOGO391/skills/actions/workflows/validate.yml/badge.svg)](https://github.com/SHOGO391/skills/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**参考LPのローカル再現と、既存LPのセクション差し替え。スキル・プロンプト・MCPの3通りで使えます。**
+**参考LPのローカル再現、既存LPのセクション差し替え、画面の文言の点検。スキル・プロンプト・MCPの3通りで使えます。**
 
 HTML・CSS・画像・フォントを整理して再現する手順と、今あるLPの文言や配色を保って一部分のデザインだけを変える手順をまとめています。
 
@@ -14,9 +14,10 @@ HTML・CSS・画像・フォントを整理して再現する手順と、今あ�
 | [lp-copy](skills/lp-copy/SKILL.md) | HTML・CSS・画像・フォント・必要なJSを取得してLPをローカル再現 | 参照URL、保存先 |
 | [lp-section-replace](skills/lp-section-replace/SKILL.md) | 既存LPの指定セクションだけデザイン変更 | 元HTML、対象セクション、参照URL |
 | [org-usage-report](skills/org-usage-report/SKILL.md) | 組織全体の Claude トークン使用量を人別・チーム別・製品別に集計して HTML にする | Enterprise の分析 API のキー、OpenTelemetry の出力、または各自の会話記録 |
+| [ui-copy](skills/ui-copy/SKILL.md) | 画面の文言から自己説明と内部の語を削り、売り物と注意書きは残す。日本語・英語 | HTML・JS・TSX、または書きたい文言の要件 |
 
 差し替えは **Header / Hero / Features / Testimonials / Pricing / CTA / FAQ / Footer** の8種類に対応。
-`lp-copy` の「copy」はページの再現を意味します。
+`lp-copy` の「copy」はページの再現、`ui-copy` の「copy」は画面の文言（UI copy）を意味します。
 
 ## MCPとして使う
 
@@ -47,7 +48,7 @@ Codexの個人用スキルへ追加する例。既存の同名スキルは上書
 
 ```sh
 mkdir -p "$HOME/.agents/skills"
-for skill in lp-copy lp-section-replace org-usage-report; do
+for skill in lp-copy lp-section-replace org-usage-report ui-copy; do
   if [ -e "$HOME/.agents/skills/$skill" ] || [ -L "$HOME/.agents/skills/$skill" ]; then
     echo "$skill は存在します。更新前に内容を比較してください。"
   else

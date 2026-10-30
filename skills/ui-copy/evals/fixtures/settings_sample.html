@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings | Sample Booking</title>
+</head>
+<body>
+
+<header>
+  <h1>Settings</h1>
+  <p>This page allows you to manage your workspace settings, integrations and notification preferences.</p>
+</header>
+
+<section id="projects">
+  <h2>Projects</h2>
+  <p>No projects yet. Choose a GitHub repository and we'll deploy on every push.</p>
+  <button>New</button>
+</section>
+
+<section id="replies">
+  <h2>AI auto-replies</h2>
+  <label><input type="checkbox" checked> Enabled</label>
+  <p>Turning this off stops AI auto-replies and web reservations. Customer messages are saved only to the conversation log in Supabase. You can turn it back on anytime from "Replies off" in the header.</p>
+</section>
+
+<section id="export">
+  <h2>Data</h2>
+  <button title="Writes a .csv file to the S3 bucket and emails you a download link when the batch job finishes">Export (writes a .csv to S3 and emails you a link)</button>
+  <p>Please go to Billing and upgrade to the Pro plan to use scheduled exports.</p>
+</section>
+
+<section id="plan">
+  <h2>Plan</h2>
+  <p>Cancelling your plan deletes all reservations after the current billing period. This cannot be undone.</p>
+  <p>Prices exclude VAT. Payments are processed by our payment provider under their terms.</p>
+</section>
+
+<script>
+  const cols = [
+    {key:'score', label:'Score (model v2 calibrated, from nightly feature run)'},
+  ];
+  function showError(m){ setStatus(`Failed to load bookings.json from the backend. ${m} Please reload the page.`); }
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "skill_name": "ui-copy",
+  "evals": [
+    {
+      "id": 1,
+      "name": "review-member-page-ja",
+      "prompt": "会員サイトの予測ページ（evals/fixtures/kaiin_sample.html）の文言、説明が多すぎる気がする。見直して直して。ただし激熱の戦略説明は売り物だから勝手に削らないで。",
+      "expected_output": "まず画面の文字列を集めて 4 分類し、before/after の表で変更案を出してから編集する。ヘッダーの自己説明・ログインの案内文・空の状態・保存先の説明は削るか置き換える。『AI印（発走前の板×購入AI）』の列名と長い title は『AI印』だけにし、ガイドの『購入AI・特徴量・2段目・T-5』は『発走前のオッズと AI の予測』に替える。激熱の戦略説明・掲載値の読み方・独立サービスの断り・7頭立ての複勝はそのまま残す。race_data.json という内部のファイル名はエラー文から消し、再読み込みはボタンにする。",
+      "files": ["evals/fixtures/kaiin_sample.html"]
+    },
+    {
+      "id": 2,
+      "name": "add-column-no-leak",
+      "prompt": "evals/fixtures/kaiin_sample.html の出走表に「前走比」って列を足したい。前夜に作った特徴量の近走補正（2段目の値）を 0.8〜1.3 の倍率で出すやつ。列の横に意味の説明も出しておいて。",
+      "expected_output": "列は既存の表（信頼度・シグナルの並び）に足し、列名は『前走比』だけで括弧書きや title の長い説明は付けない。意味の説明はガイドの表に 1 行、利用者の言葉で書く（『特徴量』『2段目』『前夜に作った』は出さない）。別ページやパネルは作らない。cols 配列の定義にも同じ短い label を使う。",
+      "files": ["evals/fixtures/kaiin_sample.html"]
+    },
+    {
+      "id": 3,
+      "name": "write-login-copy",
+      "prompt": "会員サイトのログイン画面の案内文を新しく書いて。仕組みは、毎日違う 6 文字のパスワードを朝のメールで送って、入力するとその日の予測が見られる。入力したパスワードはブラウザに保存されて翌日まで有効。パスワードはサーバーの Supabase で照合してる。",
+      "expected_output": "案内文は最小限で、『〜してください』の文ではなく入力欄とボタン（『解錠する』など具体的な動詞）で構成する。保存先や Supabase などの裏側は書かない。『メールのパスワードを入力』程度の 1 行と、失敗したとき利用者が困る制限（翌日は新しいパスワードが要る）だけ短く残す。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "review-settings-page-en",
+      "prompt": "Can you tighten up the copy on evals/fixtures/settings_sample.html? Our PM says the settings page reads like documentation. Don't touch the billing/legal lines though, legal signed off on those.",
+      "expected_output": "Classify strings first and present a before/after table before editing. Remove the header self-description, replace the empty state with a single action ('Connect repository'), cut the toggle paragraph to the one critical consequence ('Temporarily turns off AI auto-replies'), drop the Supabase/log/undo sentences, rename the export button to 'Export CSV' without the long title, replace 'Please go to Billing and upgrade...' with an [Upgrade to Pro] control, shorten the column label to 'Score' with the explanation moved to help text without 'model v2 calibrated' / 'nightly feature run', and remove 'bookings.json' / 'backend' from the error with a reload button. Keep the cancellation warning and the VAT/payment-provider lines verbatim.",
+      "files": ["evals/fixtures/settings_sample.html"]
+    }
+  ]
+}
