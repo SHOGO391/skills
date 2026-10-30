@@ -125,7 +125,7 @@ skills/lp-section-replace/   # 部分差し替えスキルと8種の確認項目
 prompts/section-replace.md   # 8種類のコピペ用プロンプト
 mcp_server.py               # stdio MCPサーバー
 docs/MCP.md                 # MCP導入方法
-tests/                      # HTML保持・MCP接続テスト
+tests/                      # MCP接続・公開前の検査・ui-copy・org-usage-reportのテスト
 scripts/validate_skills.py   # スキル構造・相対リンク等の検証
 ```
 
@@ -140,7 +140,8 @@ uv run --locked python -m unittest discover -s tests -v
 git diff --check
 ```
 
-CIではメタデータ・ローカル参照・基本的な公開ファイル確認と、実stdio接続によるMCPテストを行います。
+CIでは Ubuntu・Windows・macOS と Python 3.10 で、メタデータ・ローカル参照・公開ファイルの確認、実stdio接続によるMCPテスト、lp-copy の依存の脆弱性検査（npm audit）を行います。
+git の全履歴は gitleaks で秘密情報を検査します。
 任意サイトの視覚的な再現品質や、モデルが手順を守ることまで保証する検証ではありません。
 
 ## ライセンス・報告
@@ -148,6 +149,7 @@ CIではメタデータ・ローカル参照・基本的な公開ファイル確
 スキル・プロンプト・コードは [MIT License](LICENSE) です。
 参考サイトのHTML・画像・フォント・ロゴ等へ、このMITが適用されるわけではありません。
 自分が利用できる素材を使い、素材ごとの利用条件と必要な著作権表示を保持してください。
+取得の前に対象サイトの利用規約と robots.txt を確認し、許諾のない複製・公開はしないでください。`lp-copy` の取得は User-Agent に `lp-copy/0.1` を付けて名乗ります。
 
 改善提案は [Issues](https://github.com/SHOGO391/skills/issues) へ。
 秘密情報や顧客の非公開HTMLは投稿せず、セキュリティ上の問題は [SECURITY.md](SECURITY.md) を参照してください。

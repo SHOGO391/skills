@@ -5,7 +5,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Agent } from 'undici';
 
-export const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+// Browser-compatible so pages render as they do for visitors, with a product token so site owners can identify the tool.
+export const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 lp-copy/0.1 (+https://github.com/SHOGO391/skills)';
 export const hash = value => createHash('sha256').update(value).digest('hex');
 export const key = value => { const u = new URL(value); u.hash = ''; return u.href; };
 const privateIPs = new BlockList();

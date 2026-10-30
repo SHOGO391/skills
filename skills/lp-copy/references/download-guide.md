@@ -62,7 +62,7 @@ curl --fail --show-error --silent --location \
   'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap'
 ```
 
-レスポンスはUser-Agent等で変わるため、固定したUser-AgentでCSSと参照フォントを取得する。
+レスポンスはUser-Agent等で変わるため、固定したUser-AgentでCSSと参照フォントを取得する。User-Agent には取得用の道具であることを示す名前を残す。
 カスタムフォントもstyle・CSSの `@font-face` とsrcからttf/woff/woff2等を確認する。
 日本語のサブセット、weight・style・unicode-rangeの対応を崩さない。ライセンス・必要な表示を保存し、同梱できなければ代替フォントを使う。
 

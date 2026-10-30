@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { capture, verify, serve } from '../capture.mjs';
 import { Downloads, checkURL } from '../network.mjs';
-import { rewriteCSS, rewriteHTML, rewriteJS, cssReferences, htmlCSSReferences } from '../rewrite.mjs';
+import { rewriteCSS, rewriteHTML, rewriteJS, cssReferences, htmlCSSReferences, decodeText, textCharset, utf8ContentType } from '../rewrite.mjs';
 
 const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><rect width="200" height="100" fill="#0ac"/></svg>';
 const listen = async handler => {
@@ -22,6 +22,25 @@ test('URL check blocks special-purpose and IPv4-embedding addresses', async () =
   for (const host of blocked) await assert.rejects(checkURL(`http://${host}/`), /Private network/, host);
   assert.equal(await checkURL('http://93.184.215.14/'), 'http://93.184.215.14/');
   assert.equal(await checkURL('http://[2606:2800:21f:cb07:6820:80da:af6b:8b2c]/'), 'http://[2606:2800:21f:cb07:6820:80da:af6b:8b2c]/');
+});
+
+test('text is decoded by BOM, header, meta, or @charset and re-declared as UTF-8', () => {
+  const sjis = Buffer.from('<html><head><meta charset="Shift_JIS"></head><body>', 'latin1');
+  const page = Buffer.concat([sjis, Buffer.from([0x93, 0xfa, 0x96, 0x7b]), Buffer.from('</body></html>')]);
+  assert.equal(textCharset(page, 'text/html', 'html'), 'shift_jis');
+  assert.ok(decodeText(page, 'text/html', 'html').includes('日本'));
+  assert.equal(textCharset(page, 'text/html; charset=EUC-JP', 'html'), 'euc-jp');
+  assert.equal(textCharset(Buffer.from('<meta charset="utf-16">'), 'text/html', 'html'), 'utf-8');
+  assert.equal(textCharset(Buffer.from('<meta charset="bogus">'), 'text/html', 'html'), null);
+  assert.equal(textCharset(Buffer.from('<p>none</p>'), 'text/html', 'html'), null);
+  assert.equal(decodeText(Buffer.from([0xef, 0xbb, 0xbf, 0x61]), 'text/html; charset=shift_jis', 'html'), 'a');
+  const css = Buffer.concat([Buffer.from('@charset "Shift_JIS";a::after{content:"'), Buffer.from([0x93, 0xfa]), Buffer.from('"}')]);
+  assert.equal(decodeText(css, 'text/css', 'css'), '@charset "UTF-8";a::after{content:"日"}');
+  const doc = rewriteHTML(decodeText(page, 'text/html', 'html'), 'https://example.com/', 'https://example.com');
+  assert.ok(doc.includes('<meta charset="utf-8">'));
+  assert.ok(rewriteHTML('<head><meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS"></head>', 'https://example.com/', 'https://example.com').includes('content="text/html; charset=utf-8"'));
+  assert.equal(utf8ContentType('text/html; charset=Shift_JIS'), 'text/html; charset=utf-8');
+  assert.equal(utf8ContentType('text/css'), 'text/css; charset=utf-8');
 });
 
 test('URL and parsers preserve asset queries, CSS imports, data URLs, and ordinary links', async () => {

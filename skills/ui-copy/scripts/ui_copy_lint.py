@@ -151,22 +151,34 @@ def js_strings(file: str, src: str, base_line: int, lang: str, jsx: bool = False
     return out
 
 
-BUNDLE_NAME = re.compile(r"(\.min\.(js|css)$|[-.][A-Za-z0-9_]{8}\.js$)")
+BUNDLE_NAME = re.compile(r"\.min\.(js|css)$")
+HASHED_NAME = re.compile(r"[-.]([A-Za-z0-9_]{8,})\.(?:m?js|css)$")
+MINIFIABLE = (".js", ".mjs", ".cjs", ".css")
 SKIP_DIRS = {"node_modules", "dist", "build", ".next", "vendor", "__pycache__"}
 
 
 def is_bundle(path: str, src: str) -> bool:
-    """ビルド済み・依存物の束は利用者向けの文言の置き場ではないので飛ばす。"""
+    """ビルド済み・依存物の束は利用者向けの文言の置き場ではないので飛ばす。
+
+    名前の 8 文字以上の塊は、数字か途中の大文字を含むときだけハッシュとみなす（ui-messages.js は読む）。
+    1 行が長いだけの HTML には手で書いた文言がありうるので、行の長さで飛ばすのは JS・CSS だけ。
+    """
     parts = set(os.path.normpath(path).replace("\\", "/").split("/"))
-    if parts & SKIP_DIRS or BUNDLE_NAME.search(os.path.basename(path)):
+    name = os.path.basename(path)
+    if parts & SKIP_DIRS or BUNDLE_NAME.search(name):
         return True
+    m = HASHED_NAME.search(name)
+    if m and (re.search(r"\d", m.group(1)) or re.search(r"[A-Z]", m.group(1)[1:])):
+        return True
+    if not name.lower().endswith(MINIFIABLE):
+        return False
     head = src[:4000].split("\n")
     return any(len(ln) > 2000 for ln in head)
 
 
-def collect(path: str, lang: str) -> list[S]:
+def collect(path: str, lang: str, include_bundles: bool = False) -> list[S]:
     src = open(path, encoding="utf-8", errors="replace").read()
-    if is_bundle(path, src):
+    if not include_bundles and is_bundle(path, src):
         print(f"skip (bundle): {path}", file=sys.stderr)
         return []
     ext = os.path.splitext(path)[1].lower()
@@ -294,6 +306,7 @@ def main(argv=None) -> int:
     ap.add_argument("--only", help="出す規則をカンマ区切りで（例 T10,T11）")
     ap.add_argument("--json", help="結果を JSON で保存するパス")
     ap.add_argument("--max-text", type=int, default=90, help="画面に出す文字列の最大長")
+    ap.add_argument("--include-bundles", action="store_true", help="ビルド済みらしいファイルも飛ばさず読む（CI で取りこぼしを防ぐ）")
     a = ap.parse_args(argv)
 
     term_files = [] if a.no_default_terms else [os.path.join(TERMS_DIR, "general.txt")]
@@ -309,7 +322,7 @@ def main(argv=None) -> int:
         if not os.path.isfile(f):
             print(f"skip (not a file): {f}", file=sys.stderr)
             continue
-        for s in collect(f, a.lang):
+        for s in collect(f, a.lang, a.include_bundles):
             n_str += 1
             if any(k in s.text for k in keep):
                 continue
