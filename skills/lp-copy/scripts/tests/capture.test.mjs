@@ -16,6 +16,14 @@ const listen = async handler => {
 };
 const close = server => new Promise(resolve => server.close(resolve));
 
+test('URL check blocks special-purpose and IPv4-embedding addresses', async () => {
+  const blocked = ['100.100.100.200', '100.64.0.1', '198.18.0.1', '192.0.0.1', '240.0.0.1', '255.255.255.255',
+    '[64:ff9b::7f00:1]', '[2002:7f00:1::]', '[fec0::1]', '[::127.0.0.1]', '[100::1]', '[::ffff:127.0.0.1]', '[2001::1]'];
+  for (const host of blocked) await assert.rejects(checkURL(`http://${host}/`), /Private network/, host);
+  assert.equal(await checkURL('http://93.184.215.14/'), 'http://93.184.215.14/');
+  assert.equal(await checkURL('http://[2606:2800:21f:cb07:6820:80da:af6b:8b2c]/'), 'http://[2606:2800:21f:cb07:6820:80da:af6b:8b2c]/');
+});
+
 test('URL and parsers preserve asset queries, CSS imports, data URLs, and ordinary links', async () => {
   await assert.rejects(checkURL('http://127.0.0.1/private'), /Private network/);
   await assert.rejects(checkURL('http://[::ffff:127.0.0.1]/private'), /Private network/);
