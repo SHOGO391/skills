@@ -21,7 +21,12 @@ PRIVATE_PATTERNS = {
     "private key": re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
     "GitHub token": re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{40,})\b"),
     "AWS access key": re.compile(r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b"),
-    "personal absolute path": re.compile(r"/(?:Users|home)/[A-Za-z0-9_.-]+/"),
+    "API key (sk-)": re.compile(r"\bsk-(?:ant-|proj-)?[A-Za-z0-9_-]{20,}"),
+    "Google API key": re.compile(r"\bAIza[0-9A-Za-z_-]{35}(?![0-9A-Za-z_-])"),
+    "Slack token": re.compile(r"\bxox[abposr]-[A-Za-z0-9-]{10,}"),
+    "JWT": re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),
+    # Any user name, including spaces and non-ASCII, on macOS, Linux, and Windows.
+    "personal absolute path": re.compile(r"""(?:/(?:Users|home)/|\b[A-Za-z]:[\\/]+Users[\\/]+)[^\\/\n"'<>|*?]+[\\/]"""),
 }
 PRIVATE_PARTS = {".harness", ".venv", "private", "__pycache__", "node_modules"}
 
@@ -86,6 +91,14 @@ def check_skill(folder):
         check_links(path, folder.resolve())
 
 
+def disclosures(data):
+    """Labels of private patterns in a file; binary files (NUL bytes) are not scanned as text."""
+    if b"\0" in data[:8192]:
+        return []
+    text = data.decode("utf-8", errors="replace")
+    return [label for label, pattern in PRIVATE_PATTERNS.items() if pattern.search(text)]
+
+
 def check_public_files():
     paths = subprocess.check_output(
         ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
@@ -102,9 +115,8 @@ def check_public_files():
         require(not path.name.startswith(".env") or path.name == ".env.example",
                 f"{filename}: environment file")
         require(path.name not in {"settings.local.json", ".DS_Store"}, f"{filename}: local settings")
-        text = path.read_text(encoding="utf-8")
-        for label, pattern in PRIVATE_PATTERNS.items():
-            require(not pattern.search(text), f"{filename}: possible {label}")
+        for label in disclosures(path.read_bytes()):
+            require(False, f"{filename}: possible {label}")
         if path.suffix == ".md" and "skills" not in parts:
             check_links(path, ROOT)
     return len(set(filter(None, paths)))

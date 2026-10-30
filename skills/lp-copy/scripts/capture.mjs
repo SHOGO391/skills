@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { Downloads, UA, hash, key, checkURL } from './network.mjs';
-import { CSP, cssReferences, htmlCSSReferences, localURL, rewriteCSS, rewriteHTML, rewriteJS } from './rewrite.mjs';
+import { CSP, cssReferences, decodeText, htmlCSSReferences, localURL, rewriteCSS, rewriteHTML, rewriteJS, textCharset, utf8ContentType } from './rewrite.mjs';
 
 const VIEWPORTS = [{ name: 'desktop', width: 1440, height: 1000 }, { name: 'mobile', width: 390, height: 844 }];
 const TRACKING = /(?:google-analytics\.com|googletagmanager\.com|connect\.facebook\.net|\/analytics(?:\/|$)|\/collect(?:\?|$))/i;
@@ -14,7 +14,9 @@ const STATIC = /\.(?:m?js|css|woff2?|ttf|otf|png|jpe?g|gif|webp|avif|svg|ico|mp4
 const isCSS = e => /text\/css/i.test(e.contentType);
 const isJS = e => /(?:javascript|ecmascript)/i.test(e.contentType);
 const isHTML = e => /text\/html/i.test(e.contentType);
-const styleReferences = e => (isHTML(e) ? htmlCSSReferences : cssReferences)(e.body.toString('utf8'), e.finalURL);
+const kindOf = e => (isHTML(e) ? 'html' : isCSS(e) ? 'css' : 'js');
+const textOf = e => decodeText(e.body, e.contentType, kindOf(e));
+const styleReferences = e => (isHTML(e) ? htmlCSSReferences : cssReferences)(textOf(e), e.finalURL);
 const json = async p => JSON.parse(await readFile(p, 'utf8'));
 const saveJSON = (p, data) => writeFile(p, JSON.stringify(data, null, 2) + '\n');
 
@@ -213,12 +215,13 @@ export async function capture(url, out, options = {}) {
   const routes = {};
   for (const [source, item] of downloads.entries) {
     let body = item.body;
-    if (isHTML(item)) body = Buffer.from(rewriteHTML(body.toString('utf8'), item.finalURL, origin, downloads.entries, warnings));
-    else if (isCSS(item)) body = Buffer.from(rewriteCSS(body.toString('utf8'), item.finalURL, origin, options.exclude));
-    else if (isJS(item)) body = Buffer.from(rewriteJS(body.toString('utf8'), item.finalURL, origin, downloads.entries, warnings));
+    const declared = (isHTML(item) || isCSS(item) || isJS(item)) && textCharset(item.body, item.contentType, kindOf(item));
+    if (isHTML(item)) body = Buffer.from(rewriteHTML(textOf(item), item.finalURL, origin, downloads.entries, warnings));
+    else if (isCSS(item)) body = Buffer.from(rewriteCSS(textOf(item), item.finalURL, origin, options.exclude));
+    else if (isJS(item)) body = Buffer.from(rewriteJS(textOf(item), item.finalURL, origin, downloads.entries, warnings));
     const file = hash(body);
     await writeFile(path.join(out, 'objects', file), body);
-    routes[localURL(source, source, origin)] = { file, contentType: item.contentType };
+    routes[localURL(source, source, origin)] = { file, contentType: declared ? utf8ContentType(item.contentType) : item.contentType };
     if (source === finalURL) await writeFile(path.join(out, 'index.html'), body);
   }
   const deferred = new Set();

@@ -7,6 +7,26 @@ import parseSrcset from 'parse-srcset';
 import { hash, key } from './network.mjs';
 
 export const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'";
+const CHARSET = /charset\s*=\s*["']?\s*([\w.:-]+)/i;
+const encodingOf = label => { try { return label ? new TextDecoder(label.trim()).encoding : null; } catch { return null; } };
+// Encoding precedence: BOM, Content-Type, then <meta>/@charset; in-document UTF-16 labels mean UTF-8 (WHATWG).
+// Returns null when nothing is declared, because browsers then guess (Chromium uses windows-1252).
+export function textCharset(body, contentType = '', kind = '') {
+  if (body[0] === 0xef && body[1] === 0xbb && body[2] === 0xbf) return 'utf-8';
+  if (body[0] === 0xfe && body[1] === 0xff) return 'utf-16be';
+  if (body[0] === 0xff && body[1] === 0xfe) return 'utf-16le';
+  const header = encodingOf(contentType.match(CHARSET)?.[1]);
+  if (header) return header;
+  const head = body.subarray(0, 1024).toString('latin1');
+  const inner = encodingOf(kind === 'html' ? head.match(/<meta[^>]+charset\s*=\s*["']?\s*([\w.:-]+)/i)?.[1] : kind === 'css' ? head.match(/^@charset\s+"([\w.:-]+)";/)?.[1] : null);
+  return inner?.startsWith('utf-16') ? 'utf-8' : inner;
+}
+// Captured text is stored as UTF-8, so the CSS @charset rule is rewritten to match.
+export function decodeText(body, contentType = '', kind = '') {
+  const text = new TextDecoder(textCharset(body, contentType, kind) ?? 'utf-8').decode(body);
+  return kind === 'css' ? text.replace(/^@charset\s+"[^"]*";/, '@charset "UTF-8";') : text;
+}
+export const utf8ContentType = contentType => contentType.replace(/;\s*charset\s*=[^;]*/i, '') + '; charset=utf-8';
 const walk = (node, fn) => { fn(node); for (const child of [...node.childNodes ?? [], ...node.content?.childNodes ?? []]) walk(child, fn); };
 function documentBase(doc, fallback) {
   let found;
@@ -98,6 +118,8 @@ export function rewriteHTML(text, base, origin, entries = new Map(), warnings = 
     const attr = name => node.attrs.find(a => a.name === name);
     const remove = () => { node.parentNode.childNodes = node.parentNode.childNodes.filter(x => x !== node); };
     if (node.tagName === 'meta' && (attr('http-equiv')?.value.toLowerCase() === 'content-security-policy' || attr('http-equiv')?.value.toLowerCase() === 'refresh')) { remove(); return; }
+    if (node.tagName === 'meta' && attr('charset')) attr('charset').value = 'utf-8';
+    if (node.tagName === 'meta' && attr('http-equiv')?.value.toLowerCase() === 'content-type' && attr('content')) attr('content').value = 'text/html; charset=utf-8';
     if (node.tagName === 'link' && /(?:^|\s)(?:preconnect|dns-prefetch|prefetch)(?:\s|$)/.test(attr('rel')?.value ?? '')) { remove(); return; }
     node.attrs = node.attrs.filter(a => !['integrity', 'ping'].includes(a.name));
     for (const a of node.attrs) {
