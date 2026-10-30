@@ -13,6 +13,7 @@ HTML・CSS・画像・フォントを整理して再現する手順と、今あ�
 | --- | --- | --- |
 | [lp-copy](skills/lp-copy/SKILL.md) | HTML・CSS・画像・フォント・必要なJSを取得してLPをローカル再現 | 参照URL、保存先 |
 | [lp-section-replace](skills/lp-section-replace/SKILL.md) | 既存LPの指定セクションだけデザイン変更 | 元HTML、対象セクション、参照URL |
+| [org-usage-report](skills/org-usage-report/SKILL.md) | 組織全体の Claude トークン使用量を人別・チーム別・製品別に集計して HTML にする | Enterprise の分析 API のキー、OpenTelemetry の出力、または各自の会話記録 |
 
 差し替えは **Header / Hero / Features / Testimonials / Pricing / CTA / FAQ / Footer** の8種類に対応。
 `lp-copy` の「copy」はページの再現を意味します。
@@ -46,7 +47,7 @@ Codexの個人用スキルへ追加する例。既存の同名スキルは上書
 
 ```sh
 mkdir -p "$HOME/.agents/skills"
-for skill in lp-copy lp-section-replace; do
+for skill in lp-copy lp-section-replace org-usage-report; do
   if [ -e "$HOME/.agents/skills/$skill" ] || [ -L "$HOME/.agents/skills/$skill" ]; then
     echo "$skill は存在します。更新前に内容を比較してください。"
   else
