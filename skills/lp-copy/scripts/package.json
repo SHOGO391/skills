@@ -16,7 +16,7 @@
     "parse-srcset": "1.0.2",
     "parse5": "8.0.1",
     "playwright": "1.64.0",
-    "postcss": "8.5.29",
+    "postcss": "8.5.32",
     "postcss-value-parser": "4.2.0",
     "undici": "7.30.1"
   }
